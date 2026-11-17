@@ -3,65 +3,67 @@
 -- Vistas de la base "museo"
 -- Motor: PostgreSQL
 --
+-- Cada vista resuelve una de las consultas de la propuesta (C, E y F),
+-- que son las que no reciben datos particulares.
+--
 -- Ejecutar sobre la base "museo" después de 01_creacion_bd.sql y
 -- 02_triggers.sql. Se puede volver a ejecutar: elimina las vistas
 -- existentes antes de crearlas.
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
--- 1. vw_obras_detalle
--- Información detallada de las obras: datos de la obra, su autor y la
--- sala donde se almacena el original.
+-- 1. vw_restauradores_ultimos_6_meses
+-- Consulta C: empleados que hayan restaurado por lo menos 5 obras en
+-- los últimos 6 meses (180 días).
 -- ---------------------------------------------------------------------
-DROP VIEW IF EXISTS vw_obras_detalle;
-CREATE VIEW vw_obras_detalle AS
-SELECT o.id_obra,
-       o.nombre     AS obra,
-       o.fecha_creacion,
-       o.fecha_rec,
-       o.sensibilidad,
-       a.nombre     AS nombre_autor,
-       a.apellido   AS apellido_autor,
-       s.nombre     AS sala,
-       s.tipo       AS tipo_sala
-  FROM obra o, autor a, sala s
- WHERE a.id_autor = o.id_autor
-   AND s.id_sala  = o.id_sala;
+DROP VIEW IF EXISTS vw_restauradores_ultimos_6_meses;
+CREATE VIEW vw_restauradores_ultimos_6_meses AS
+SELECT e.dni,
+       e.nombre,
+       e.apellido,
+       e.email,
+       COUNT(DISTINCT r.id_obra) AS obras_restauradas
+  FROM empleado e, restauracion r
+ WHERE r.dni_empleado = e.dni
+   AND r.fecha_ingreso >= CURRENT_DATE - 180
+ GROUP BY e.dni, e.nombre, e.apellido, e.email
+HAVING COUNT(DISTINCT r.id_obra) >= 5;
 
 -- ---------------------------------------------------------------------
--- 2. vw_copias_detalle
--- Información detallada de las copias: obra original, autor y la sala
--- donde se exhibe o almacena la copia.
+-- 2. vw_originales_por_sala
+-- Consulta E: cantidad de obras almacenadas en cada sala de
+-- almacenamiento, sin contar las copias.
 -- ---------------------------------------------------------------------
-DROP VIEW IF EXISTS vw_copias_detalle;
-CREATE VIEW vw_copias_detalle AS
-SELECT c.id_copia,
-       o.nombre     AS obra_original,
-       a.nombre     AS nombre_autor,
-       a.apellido   AS apellido_autor,
-       c.fecha_creacion,
-       s.nombre     AS sala_copia,
-       s.tipo       AS tipo_sala
-  FROM copia c, obra o, autor a, sala s
- WHERE o.id_obra  = c.id_obra
-   AND a.id_autor = o.id_autor
-   AND s.id_sala  = c.id_sala;
+DROP VIEW IF EXISTS vw_originales_por_sala;
+CREATE VIEW vw_originales_por_sala AS
+SELECT s.id_sala,
+       s.nombre,
+       s.especializacion,
+       COUNT(o.id_obra) AS cantidad_originales
+  FROM sala s, obra o
+ WHERE o.id_sala = s.id_sala
+   AND s.tipo = 'almacenamiento'
+ GROUP BY s.id_sala, s.nombre, s.especializacion;
 
 -- ---------------------------------------------------------------------
--- 3. vw_restauraciones_detalle
--- Información detallada de las restauraciones: obra restaurada, empleado
--- responsable y período (fecha_fin NULL = en curso).
+-- 3. vw_restauradores_antiguos_ultimo_anio
+-- Consulta F: empleados con más de 5 años de antigüedad (1825 días) que
+-- hayan restaurado por lo menos 5 obras en el último año (365 días).
 -- ---------------------------------------------------------------------
-DROP VIEW IF EXISTS vw_restauraciones_detalle;
-CREATE VIEW vw_restauraciones_detalle AS
-SELECT r.id_restauracion,
-       o.id_obra,
-       o.nombre     AS obra,
-       e.dni        AS dni_empleado,
-       e.nombre     AS nombre_empleado,
-       e.apellido   AS apellido_empleado,
-       r.fecha_ingreso,
-       r.fecha_fin
-  FROM restauracion r, obra o, empleado e
- WHERE o.id_obra = r.id_obra
-   AND e.dni     = r.dni_empleado;
+DROP VIEW IF EXISTS vw_restauradores_antiguos_ultimo_anio;
+CREATE VIEW vw_restauradores_antiguos_ultimo_anio AS
+SELECT e.dni,
+       e.nombre,
+       e.apellido,
+       e.fecha_nac,
+       e.telefono,
+       e.email,
+       e.fecha_ingreso,
+       COUNT(DISTINCT r.id_obra) AS obras_restauradas
+  FROM empleado e, restauracion r
+ WHERE r.dni_empleado = e.dni
+   AND e.fecha_ingreso < CURRENT_DATE - 1825
+   AND r.fecha_ingreso >= CURRENT_DATE - 365
+ GROUP BY e.dni, e.nombre, e.apellido, e.fecha_nac, e.telefono,
+          e.email, e.fecha_ingreso
+HAVING COUNT(DISTINCT r.id_obra) >= 5;
