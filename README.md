@@ -18,6 +18,7 @@ Facultad de Ciencia y Tecnología (UADER), Sede Concepción del Uruguay.
 | [`06_funciones.sql`](06_funciones.sql) | Una función por cada consulta del enunciado. |
 | [`07_usuarios.sql`](07_usuarios.sql) | Usuarios `museo_admin` y `museo_consulta`, con distinto nivel de permisos. |
 | [`08_pruebas.sql`](08_pruebas.sql) | Pruebas de triggers, usuarios, vistas y funciones. |
+| [`backup/museo_backup.sql`](backup/museo_backup.sql) | Backup de la base con los datos de prueba cargados. |
 | [`docs/BDD_TP_final_E1.pdf`](docs/BDD_TP_final_E1.pdf) | Informe: modelo relacional, diccionario de datos, dominios y triggers. |
 
 ## Modelo
@@ -72,6 +73,17 @@ Vistas: `vw_restauradores_ultimos_6_meses` (consulta C), `vw_originales_por_sala
 Todos los scripts se pueden volver a ejecutar. `01_creacion_bd.sql` elimina las tablas,
 los dominios y las vistas existentes, por lo que después hay que ejecutar nuevamente
 los demás.
+
+## Restaurar el backup
+
+Como alternativa a ejecutar los scripts, el backup recrea las tablas, los triggers, las
+vistas, las funciones y los datos en una base vacía:
+
+```bash
+psql -U postgres -d museo -f backup/museo_backup.sql
+```
+
+El backup no incluye los usuarios: se crean con `07_usuarios.sql`.
 
 ## Funciones
 
