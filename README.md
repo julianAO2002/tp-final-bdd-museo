@@ -107,8 +107,8 @@ Uso: `SELECT * FROM fn_obras_restauradas_en_anio(2023);`
 
 ## Pruebas
 
-`08_pruebas.sql` prueba cada trigger con operaciones `INSERT`, `UPDATE` y `DELETE`, y los
-permisos de cada usuario. Cada prueba informa el resultado esperado y el obtenido en un
+`08_pruebas.sql` hace una prueba por cada trigger, una de `DELETE` y una por cada
+usuario. Cada prueba informa el resultado esperado y el obtenido en un
 mensaje, y todo se ejecuta dentro de una transacción que termina en `ROLLBACK`, por lo
 que los datos no se modifican. Al final consulta las vistas y las funciones, con el
 resultado esperado indicado en un comentario.
