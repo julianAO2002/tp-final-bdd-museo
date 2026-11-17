@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict J715Q5bq3Xl4Pk4ZQxuB5d6pd5Y9QMxDPP1gfQYWbi6AT2wUaKGhN8hk5OCTnPM
+\restrict 8hwTtW0AiJlOx2Fy1CfQl9AVUirRbnQkdWvdw2ryJIFBOJnwqrr8Dwzuoha8Pr2
 
 -- Dumped from database version 17.11
 -- Dumped by pg_dump version 17.11
@@ -807,6 +807,7 @@ COPY public.funcion_empleado (id_funcion, descripcion) FROM stdin;
 --
 
 COPY public.obra (id_obra, nombre, fecha_creacion, fecha_rec, descripcion, sensibilidad, id_autor, id_sala) FROM stdin;
+12	La libertad guiando al pueblo	1830-01-01	2019-10-02	Alegoría de la Revolución de Julio.	fotosensibilidad	6	6
 1	La Gioconda	1503-10-01	2010-04-12	Retrato de Lisa Gherardini, óleo sobre tabla de álamo.	humedad	1	1
 2	La Virgen de las Rocas	1483-04-25	2011-06-03	Óleo sobre tabla trasladado a lienzo.	fotosensibilidad	1	2
 3	San Juan Bautista	1513-01-01	2012-09-20	Último cuadro conocido de Leonardo.	humedad	1	1
@@ -818,7 +819,6 @@ COPY public.obra (id_obra, nombre, fecha_creacion, fecha_rec, descripcion, sensi
 9	Betsabé en el baño	1654-01-01	2017-01-10	Óleo sobre lienzo de gran formato.	humedad	4	1
 10	La encajera	1669-01-01	2017-08-05	Pequeño óleo sobre lienzo montado en tabla.	fotosensibilidad	5	6
 11	El astrónomo	1668-01-01	2018-03-27	Erudito estudiando un globo celeste.	humedad	5	3
-12	La libertad guiando al pueblo	1830-01-01	2019-10-02	Alegoría de la Revolución de Julio.	fotosensibilidad	6	6
 13	La muerte de Sardanápalo	1827-01-01	2020-05-15	Escena orientalista de gran tamaño.	humedad	6	1
 14	La coronación de Napoleón	1807-01-01	2021-02-11	Consagración del emperador en Notre-Dame.	fotosensibilidad	7	2
 15	El juramento de los Horacios	1784-01-01	2022-08-30	Obra emblemática del neoclasicismo.	humedad	7	3
@@ -887,7 +887,7 @@ COPY public.sala (id_sala, nombre, tipo, especializacion) FROM stdin;
 -- Name: autor_id_autor_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.autor_id_autor_seq', 17, true);
+SELECT pg_catalog.setval('public.autor_id_autor_seq', 15, true);
 
 
 --
@@ -1127,5 +1127,5 @@ ALTER TABLE ONLY public.restauracion
 -- PostgreSQL database dump complete
 --
 
-\unrestrict J715Q5bq3Xl4Pk4ZQxuB5d6pd5Y9QMxDPP1gfQYWbi6AT2wUaKGhN8hk5OCTnPM
+\unrestrict 8hwTtW0AiJlOx2Fy1CfQl9AVUirRbnQkdWvdw2ryJIFBOJnwqrr8Dwzuoha8Pr2
 
