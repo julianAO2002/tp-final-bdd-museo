@@ -9,7 +9,7 @@
 
 -- ---------------------------------------------------------------------
 -- 1. trg_copia_fecha_creacion
--- Tabla: COPIA - BEFORE INSERT OR UPDATE OF id_obra
+-- Tabla: COPIA - BEFORE INSERT OR UPDATE
 -- Asigna fecha_creacion = OBRA.fecha_rec + 1 mes, ignorando el valor
 -- enviado.
 -- ---------------------------------------------------------------------
@@ -36,13 +36,13 @@ $$;
 
 DROP TRIGGER IF EXISTS trg_copia_fecha_creacion ON copia;
 CREATE TRIGGER trg_copia_fecha_creacion
-    BEFORE INSERT OR UPDATE OF id_obra ON copia
+    BEFORE INSERT OR UPDATE ON copia
     FOR EACH ROW
     EXECUTE FUNCTION fn_copia_fecha_creacion();
 
 -- ---------------------------------------------------------------------
 -- 2. trg_obra_actualiza_copia
--- Tabla: OBRA - AFTER UPDATE OF fecha_rec
+-- Tabla: OBRA - AFTER UPDATE
 -- Si cambió la fecha de recuperación, recalcula fecha_creacion de las
 -- copias de la obra. Si no cambió, no hace nada.
 -- ---------------------------------------------------------------------
@@ -63,13 +63,13 @@ $$;
 
 DROP TRIGGER IF EXISTS trg_obra_actualiza_copia ON obra;
 CREATE TRIGGER trg_obra_actualiza_copia
-    AFTER UPDATE OF fecha_rec ON obra
+    AFTER UPDATE ON obra
     FOR EACH ROW
     EXECUTE FUNCTION fn_obra_actualiza_copia();
 
 -- ---------------------------------------------------------------------
 -- 3. trg_obra_sala_valida
--- Tabla: OBRA - BEFORE INSERT OR UPDATE OF id_sala, sensibilidad
+-- Tabla: OBRA - BEFORE INSERT OR UPDATE
 -- Los originales solo se guardan en salas de almacenamiento cuya
 -- especialización coincida con la sensibilidad de la obra.
 -- ---------------------------------------------------------------------
@@ -105,13 +105,13 @@ $$;
 
 DROP TRIGGER IF EXISTS trg_obra_sala_valida ON obra;
 CREATE TRIGGER trg_obra_sala_valida
-    BEFORE INSERT OR UPDATE OF id_sala, sensibilidad ON obra
+    BEFORE INSERT OR UPDATE ON obra
     FOR EACH ROW
     EXECUTE FUNCTION fn_obra_sala_valida();
 
 -- ---------------------------------------------------------------------
 -- 4. trg_copia_ubicacion
--- Tabla: COPIA - BEFORE INSERT OR UPDATE OF id_sala
+-- Tabla: COPIA - BEFORE INSERT OR UPDATE
 -- Una copia en una sala de almacenamiento debe estar en la misma sala
 -- que su original; en una sala de muestra se acepta.
 -- ---------------------------------------------------------------------
@@ -150,13 +150,13 @@ $$;
 
 DROP TRIGGER IF EXISTS trg_copia_ubicacion ON copia;
 CREATE TRIGGER trg_copia_ubicacion
-    BEFORE INSERT OR UPDATE OF id_sala ON copia
+    BEFORE INSERT OR UPDATE ON copia
     FOR EACH ROW
     EXECUTE FUNCTION fn_copia_ubicacion();
 
 -- ---------------------------------------------------------------------
 -- 5. trg_restauracion_restaurador
--- Tabla: RESTAURACION - BEFORE INSERT OR UPDATE OF dni_empleado, fecha_ingreso
+-- Tabla: RESTAURACION - BEFORE INSERT OR UPDATE
 -- El responsable debe tener la función 'restauracion' y la restauración
 -- no puede ser anterior a su ingreso al museo.
 -- ---------------------------------------------------------------------
@@ -192,13 +192,13 @@ $$;
 
 DROP TRIGGER IF EXISTS trg_restauracion_restaurador ON restauracion;
 CREATE TRIGGER trg_restauracion_restaurador
-    BEFORE INSERT OR UPDATE OF dni_empleado, fecha_ingreso ON restauracion
+    BEFORE INSERT OR UPDATE ON restauracion
     FOR EACH ROW
     EXECUTE FUNCTION fn_restauracion_restaurador();
 
 -- ---------------------------------------------------------------------
 -- 6. trg_restauracion_superposicion
--- Tabla: RESTAURACION - BEFORE INSERT OR UPDATE OF fecha_ingreso, fecha_fin, id_obra
+-- Tabla: RESTAURACION - BEFORE INSERT OR UPDATE
 -- Una obra no puede estar en dos restauraciones a la vez. Una
 -- restauración con fecha_fin NULL se considera abierta hasta hoy.
 -- ---------------------------------------------------------------------
@@ -226,13 +226,13 @@ $$;
 
 DROP TRIGGER IF EXISTS trg_restauracion_superposicion ON restauracion;
 CREATE TRIGGER trg_restauracion_superposicion
-    BEFORE INSERT OR UPDATE OF fecha_ingreso, fecha_fin, id_obra ON restauracion
+    BEFORE INSERT OR UPDATE ON restauracion
     FOR EACH ROW
     EXECUTE FUNCTION fn_restauracion_superposicion();
 
 -- ---------------------------------------------------------------------
 -- 7. trg_obra_fechas
--- Tabla: OBRA - BEFORE INSERT OR UPDATE OF fecha_rec
+-- Tabla: OBRA - BEFORE INSERT OR UPDATE
 -- La fecha de recuperación no puede ser futura.
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION fn_obra_fechas()
@@ -250,13 +250,13 @@ $$;
 
 DROP TRIGGER IF EXISTS trg_obra_fechas ON obra;
 CREATE TRIGGER trg_obra_fechas
-    BEFORE INSERT OR UPDATE OF fecha_rec ON obra
+    BEFORE INSERT OR UPDATE ON obra
     FOR EACH ROW
     EXECUTE FUNCTION fn_obra_fechas();
 
 -- ---------------------------------------------------------------------
 -- 8. trg_copia_unica
--- Tabla: COPIA - BEFORE INSERT OR UPDATE OF id_obra
+-- Tabla: COPIA - BEFORE INSERT OR UPDATE
 -- Cada obra tiene una sola copia a la vez.
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION fn_copia_unica()
@@ -279,13 +279,13 @@ $$;
 
 DROP TRIGGER IF EXISTS trg_copia_unica ON copia;
 CREATE TRIGGER trg_copia_unica
-    BEFORE INSERT OR UPDATE OF id_obra ON copia
+    BEFORE INSERT OR UPDATE ON copia
     FOR EACH ROW
     EXECUTE FUNCTION fn_copia_unica();
 
 -- ---------------------------------------------------------------------
 -- 9. trg_empleado_fechas
--- Tabla: EMPLEADO - BEFORE INSERT OR UPDATE OF fecha_nac, fecha_ingreso
+-- Tabla: EMPLEADO - BEFORE INSERT OR UPDATE
 -- La fecha de nacimiento debe ser pasada y la fecha de ingreso no puede
 -- ser futura.
 -- ---------------------------------------------------------------------
@@ -308,13 +308,13 @@ $$;
 
 DROP TRIGGER IF EXISTS trg_empleado_fechas ON empleado;
 CREATE TRIGGER trg_empleado_fechas
-    BEFORE INSERT OR UPDATE OF fecha_nac, fecha_ingreso ON empleado
+    BEFORE INSERT OR UPDATE ON empleado
     FOR EACH ROW
     EXECUTE FUNCTION fn_empleado_fechas();
 
 -- ---------------------------------------------------------------------
 -- 10. trg_restauracion_fecha_obra
--- Tabla: RESTAURACION - BEFORE INSERT OR UPDATE OF fecha_ingreso, id_obra
+-- Tabla: RESTAURACION - BEFORE INSERT OR UPDATE
 -- Una obra no entra a restauración antes de haber sido recuperada por
 -- el museo.
 -- ---------------------------------------------------------------------
@@ -340,6 +340,6 @@ $$;
 
 DROP TRIGGER IF EXISTS trg_restauracion_fecha_obra ON restauracion;
 CREATE TRIGGER trg_restauracion_fecha_obra
-    BEFORE INSERT OR UPDATE OF fecha_ingreso, id_obra ON restauracion
+    BEFORE INSERT OR UPDATE ON restauracion
     FOR EACH ROW
     EXECUTE FUNCTION fn_restauracion_fecha_obra();
