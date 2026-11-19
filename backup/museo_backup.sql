@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 8hwTtW0AiJlOx2Fy1CfQl9AVUirRbnQkdWvdw2ryJIFBOJnwqrr8Dwzuoha8Pr2
+\restrict gQwY4YnQZIJp2AXtzgN1HEzxKJTmCLKs5UhURy5bNRF5qpXlRB6uiXYk6aicdbm
 
 -- Dumped from database version 17.11
 -- Dumped by pg_dump version 17.11
@@ -136,10 +136,10 @@ $$;
 
 
 --
--- Name: fn_copias_de_autor(character varying, character varying); Type: FUNCTION; Schema: public; Owner: -
+-- Name: fn_copias_de_autor(integer); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.fn_copias_de_autor(p_nombre character varying, p_apellido character varying) RETURNS TABLE(id_copia integer, fecha_creacion date, obra_original character varying, sala_actual character varying, tipo_sala character varying)
+CREATE FUNCTION public.fn_copias_de_autor(p_id_autor integer) RETURNS TABLE(id_copia integer, fecha_creacion date, obra_original character varying, sala_actual character varying, tipo_sala character varying)
     LANGUAGE sql
     AS $$
     SELECT c.id_copia,
@@ -147,12 +147,10 @@ CREATE FUNCTION public.fn_copias_de_autor(p_nombre character varying, p_apellido
            o.nombre,
            s.nombre,
            s.tipo
-      FROM copia c, obra o, autor a, sala s
+      FROM copia c, obra o, sala s
      WHERE o.id_obra  = c.id_obra
-       AND a.id_autor = o.id_autor
        AND s.id_sala  = c.id_sala
-       AND a.nombre   = p_nombre
-       AND a.apellido = p_apellido
+       AND o.id_autor = p_id_autor
      ORDER BY o.nombre, c.id_copia;
 $$;
 
@@ -252,19 +250,15 @@ $$;
 -- Name: fn_obras_por_sector_de_restaurador(integer); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.fn_obras_por_sector_de_restaurador(p_dni integer) RETURNS TABLE(dni integer, nombre character varying, apellido character varying, sector character varying, cantidad_obras bigint)
+CREATE FUNCTION public.fn_obras_por_sector_de_restaurador(p_dni integer) RETURNS TABLE(sector character varying, cantidad_obras bigint)
     LANGUAGE sql
     AS $$
-    SELECT e.dni,
-           e.nombre,
-           e.apellido,
-           o.sensibilidad,
+    SELECT o.sensibilidad,
            COUNT(DISTINCT r.id_obra)
-      FROM empleado e, restauracion r, obra o
-     WHERE r.dni_empleado = e.dni
-       AND o.id_obra      = r.id_obra
-       AND e.dni = p_dni
-     GROUP BY e.dni, e.nombre, e.apellido, o.sensibilidad
+      FROM restauracion r, obra o
+     WHERE o.id_obra      = r.id_obra
+       AND r.dni_empleado = p_dni
+     GROUP BY o.sensibilidad
      ORDER BY o.sensibilidad;
 $$;
 
@@ -406,6 +400,7 @@ CREATE FUNCTION public.fn_restauradores_antiguos_ultimo_anio() RETURNS TABLE(dni
            v.fecha_ingreso,
            v.obras_restauradas
       FROM vw_restauradores_antiguos_ultimo_anio v
+     WHERE v.obras_restauradas >= 5
      ORDER BY v.obras_restauradas DESC, v.apellido;
 $$;
 
@@ -423,6 +418,7 @@ CREATE FUNCTION public.fn_restauradores_ultimos_6_meses() RETURNS TABLE(dni inte
            v.email,
            v.obras_restauradas
       FROM vw_restauradores_ultimos_6_meses v
+     WHERE v.obras_restauradas >= 5
      ORDER BY v.obras_restauradas DESC, v.apellido;
 $$;
 
@@ -654,8 +650,7 @@ CREATE VIEW public.vw_restauradores_antiguos_ultimo_anio AS
    FROM public.empleado e,
     public.restauracion r
   WHERE (((r.dni_empleado)::integer = (e.dni)::integer) AND (e.fecha_ingreso < (CURRENT_DATE - 1825)) AND (r.fecha_ingreso >= (CURRENT_DATE - 365)))
-  GROUP BY e.dni, e.nombre, e.apellido, e.fecha_nac, e.telefono, e.email, e.fecha_ingreso
- HAVING (count(DISTINCT r.id_obra) >= 5);
+  GROUP BY e.dni, e.nombre, e.apellido, e.fecha_nac, e.telefono, e.email, e.fecha_ingreso;
 
 
 --
@@ -671,8 +666,7 @@ CREATE VIEW public.vw_restauradores_ultimos_6_meses AS
    FROM public.empleado e,
     public.restauracion r
   WHERE (((r.dni_empleado)::integer = (e.dni)::integer) AND (r.fecha_ingreso >= (CURRENT_DATE - 180)))
-  GROUP BY e.dni, e.nombre, e.apellido, e.email
- HAVING (count(DISTINCT r.id_obra) >= 5);
+  GROUP BY e.dni, e.nombre, e.apellido, e.email;
 
 
 --
@@ -735,7 +729,7 @@ COPY public.copia (id_copia, fecha_creacion, id_obra, id_sala) FROM stdin;
 
 COPY public.empleado (dni, nombre, apellido, fecha_nac, telefono, email, fecha_ingreso) FROM stdin;
 30111222	Ana	Martínez	1980-05-14	3442-411111	amartinez@museo.org	2012-03-01
-32444555	Lucas	Fernández	1992-09-03	3442-422222	lfernandez@museo.org	2023-11-18
+32444555	Lucas	Fernández	1992-09-03	3442-422222	lfernandez@museo.org	2023-11-20
 28999000	Marta	Gómez	1975-01-22	3442-433333	mgomez@museo.org	2010-07-15
 29888777	Pablo	Díaz	1978-11-30	\N	pdiaz@museo.org	2015-02-01
 35666777	Diego	Ruiz	1990-04-18	3442-455555	\N	2018-06-10
@@ -807,7 +801,6 @@ COPY public.funcion_empleado (id_funcion, descripcion) FROM stdin;
 --
 
 COPY public.obra (id_obra, nombre, fecha_creacion, fecha_rec, descripcion, sensibilidad, id_autor, id_sala) FROM stdin;
-12	La libertad guiando al pueblo	1830-01-01	2019-10-02	Alegoría de la Revolución de Julio.	fotosensibilidad	6	6
 1	La Gioconda	1503-10-01	2010-04-12	Retrato de Lisa Gherardini, óleo sobre tabla de álamo.	humedad	1	1
 2	La Virgen de las Rocas	1483-04-25	2011-06-03	Óleo sobre tabla trasladado a lienzo.	fotosensibilidad	1	2
 3	San Juan Bautista	1513-01-01	2012-09-20	Último cuadro conocido de Leonardo.	humedad	1	1
@@ -819,6 +812,7 @@ COPY public.obra (id_obra, nombre, fecha_creacion, fecha_rec, descripcion, sensi
 9	Betsabé en el baño	1654-01-01	2017-01-10	Óleo sobre lienzo de gran formato.	humedad	4	1
 10	La encajera	1669-01-01	2017-08-05	Pequeño óleo sobre lienzo montado en tabla.	fotosensibilidad	5	6
 11	El astrónomo	1668-01-01	2018-03-27	Erudito estudiando un globo celeste.	humedad	5	3
+12	La libertad guiando al pueblo	1830-01-01	2019-10-02	Alegoría de la Revolución de Julio.	fotosensibilidad	6	6
 13	La muerte de Sardanápalo	1827-01-01	2020-05-15	Escena orientalista de gran tamaño.	humedad	6	1
 14	La coronación de Napoleón	1807-01-01	2021-02-11	Consagración del emperador en Notre-Dame.	fotosensibilidad	7	2
 15	El juramento de los Horacios	1784-01-01	2022-08-30	Obra emblemática del neoclasicismo.	humedad	7	3
@@ -843,20 +837,20 @@ COPY public.restauracion (id_restauracion, fecha_ingreso, fecha_fin, id_obra, dn
 3	2023-03-10	2023-07-20	8	28999000
 4	2023-05-02	2023-06-15	5	30111222
 5	2023-11-15	2024-02-10	12	29888777
-6	2026-01-21	2026-03-02	2	30111222
-7	2026-05-31	2026-06-25	1	30111222
-8	2026-06-30	2026-07-25	3	30111222
-9	2026-07-30	2026-08-24	4	30111222
-10	2026-08-29	2026-09-23	6	30111222
-11	2026-10-28	\N	7	30111222
-12	2026-06-10	2026-07-10	2	32444555
-13	2026-07-15	2026-08-09	9	32444555
-14	2026-08-14	2026-09-08	10	32444555
-15	2026-09-13	2026-10-08	11	32444555
-16	2026-10-13	2026-11-07	13	32444555
-17	2026-05-01	2026-06-20	14	28999000
-18	2026-10-18	\N	15	28999000
-19	2025-12-22	2026-01-11	3	29888777
+6	2026-01-23	2026-03-04	2	30111222
+7	2026-06-02	2026-06-27	1	30111222
+8	2026-07-02	2026-07-27	3	30111222
+9	2026-08-01	2026-08-26	4	30111222
+10	2026-08-31	2026-09-25	6	30111222
+11	2026-10-30	\N	7	30111222
+12	2026-06-12	2026-07-12	2	32444555
+13	2026-07-17	2026-08-11	9	32444555
+14	2026-08-16	2026-09-10	10	32444555
+15	2026-09-15	2026-10-10	11	32444555
+16	2026-10-15	2026-11-09	13	32444555
+17	2026-05-03	2026-06-22	14	28999000
+18	2026-10-20	\N	15	28999000
+19	2025-12-24	2026-01-13	3	29888777
 \.
 
 
@@ -887,7 +881,7 @@ COPY public.sala (id_sala, nombre, tipo, especializacion) FROM stdin;
 -- Name: autor_id_autor_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.autor_id_autor_seq', 15, true);
+SELECT pg_catalog.setval('public.autor_id_autor_seq', 16, true);
 
 
 --
@@ -993,70 +987,70 @@ ALTER TABLE ONLY public.sala
 -- Name: copia trg_copia_fecha_creacion; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER trg_copia_fecha_creacion BEFORE INSERT OR UPDATE OF id_obra ON public.copia FOR EACH ROW EXECUTE FUNCTION public.fn_copia_fecha_creacion();
+CREATE TRIGGER trg_copia_fecha_creacion BEFORE INSERT OR UPDATE ON public.copia FOR EACH ROW EXECUTE FUNCTION public.fn_copia_fecha_creacion();
 
 
 --
 -- Name: copia trg_copia_ubicacion; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER trg_copia_ubicacion BEFORE INSERT OR UPDATE OF id_sala ON public.copia FOR EACH ROW EXECUTE FUNCTION public.fn_copia_ubicacion();
+CREATE TRIGGER trg_copia_ubicacion BEFORE INSERT OR UPDATE ON public.copia FOR EACH ROW EXECUTE FUNCTION public.fn_copia_ubicacion();
 
 
 --
 -- Name: copia trg_copia_unica; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER trg_copia_unica BEFORE INSERT OR UPDATE OF id_obra ON public.copia FOR EACH ROW EXECUTE FUNCTION public.fn_copia_unica();
+CREATE TRIGGER trg_copia_unica BEFORE INSERT OR UPDATE ON public.copia FOR EACH ROW EXECUTE FUNCTION public.fn_copia_unica();
 
 
 --
 -- Name: empleado trg_empleado_fechas; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER trg_empleado_fechas BEFORE INSERT OR UPDATE OF fecha_nac, fecha_ingreso ON public.empleado FOR EACH ROW EXECUTE FUNCTION public.fn_empleado_fechas();
+CREATE TRIGGER trg_empleado_fechas BEFORE INSERT OR UPDATE ON public.empleado FOR EACH ROW EXECUTE FUNCTION public.fn_empleado_fechas();
 
 
 --
 -- Name: obra trg_obra_actualiza_copia; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER trg_obra_actualiza_copia AFTER UPDATE OF fecha_rec ON public.obra FOR EACH ROW EXECUTE FUNCTION public.fn_obra_actualiza_copia();
+CREATE TRIGGER trg_obra_actualiza_copia AFTER UPDATE ON public.obra FOR EACH ROW EXECUTE FUNCTION public.fn_obra_actualiza_copia();
 
 
 --
 -- Name: obra trg_obra_fechas; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER trg_obra_fechas BEFORE INSERT OR UPDATE OF fecha_rec ON public.obra FOR EACH ROW EXECUTE FUNCTION public.fn_obra_fechas();
+CREATE TRIGGER trg_obra_fechas BEFORE INSERT OR UPDATE ON public.obra FOR EACH ROW EXECUTE FUNCTION public.fn_obra_fechas();
 
 
 --
 -- Name: obra trg_obra_sala_valida; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER trg_obra_sala_valida BEFORE INSERT OR UPDATE OF id_sala, sensibilidad ON public.obra FOR EACH ROW EXECUTE FUNCTION public.fn_obra_sala_valida();
+CREATE TRIGGER trg_obra_sala_valida BEFORE INSERT OR UPDATE ON public.obra FOR EACH ROW EXECUTE FUNCTION public.fn_obra_sala_valida();
 
 
 --
 -- Name: restauracion trg_restauracion_fecha_obra; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER trg_restauracion_fecha_obra BEFORE INSERT OR UPDATE OF fecha_ingreso, id_obra ON public.restauracion FOR EACH ROW EXECUTE FUNCTION public.fn_restauracion_fecha_obra();
+CREATE TRIGGER trg_restauracion_fecha_obra BEFORE INSERT OR UPDATE ON public.restauracion FOR EACH ROW EXECUTE FUNCTION public.fn_restauracion_fecha_obra();
 
 
 --
 -- Name: restauracion trg_restauracion_restaurador; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER trg_restauracion_restaurador BEFORE INSERT OR UPDATE OF dni_empleado, fecha_ingreso ON public.restauracion FOR EACH ROW EXECUTE FUNCTION public.fn_restauracion_restaurador();
+CREATE TRIGGER trg_restauracion_restaurador BEFORE INSERT OR UPDATE ON public.restauracion FOR EACH ROW EXECUTE FUNCTION public.fn_restauracion_restaurador();
 
 
 --
 -- Name: restauracion trg_restauracion_superposicion; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER trg_restauracion_superposicion BEFORE INSERT OR UPDATE OF fecha_ingreso, fecha_fin, id_obra ON public.restauracion FOR EACH ROW EXECUTE FUNCTION public.fn_restauracion_superposicion();
+CREATE TRIGGER trg_restauracion_superposicion BEFORE INSERT OR UPDATE ON public.restauracion FOR EACH ROW EXECUTE FUNCTION public.fn_restauracion_superposicion();
 
 
 --
@@ -1127,5 +1121,5 @@ ALTER TABLE ONLY public.restauracion
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 8hwTtW0AiJlOx2Fy1CfQl9AVUirRbnQkdWvdw2ryJIFBOJnwqrr8Dwzuoha8Pr2
+\unrestrict gQwY4YnQZIJp2AXtzgN1HEzxKJTmCLKs5UhURy5bNRF5qpXlRB6uiXYk6aicdbm
 
