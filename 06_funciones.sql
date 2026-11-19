@@ -5,8 +5,10 @@
 --
 -- Una función por cada consulta de la propuesta (A a F). Las funciones
 -- de las consultas A, B y D reciben el dato particular como parámetro;
--- las de las consultas C, E y F no reciben parámetros y devuelven el
--- contenido de la vista que resuelve la consulta.
+-- las de las consultas C, E y F no reciben parámetros y leen la vista
+-- correspondiente. En C y F la vista muestra la cantidad de obras de
+-- cada empleado en el período y la función filtra los que tienen por
+-- lo menos 5.
 --
 -- Ejecutar sobre la base "museo" después de 03_vistas.sql. Se puede
 -- volver a ejecutar: elimina las funciones existentes antes de crearlas.
@@ -51,31 +53,25 @@ $$;
 -- B) fn_obras_por_sector_de_restaurador
 -- Entrada: p_dni, documento del restaurador.
 -- Salida:  una fila por sector (sensibilidad de la obra) con la
---          cantidad de obras distintas que restauró el empleado.
--- Lógica:  une EMPLEADO, RESTAURACION y OBRA, filtra por el DNI y
---          agrupa por la sensibilidad de la obra.
+--          cantidad de obras distintas que restauró el empleado. No
+--          repite los datos del empleado, que ya se conoce por el DNI.
+-- Lógica:  une RESTAURACION y OBRA, filtra por el DNI del responsable
+--          y agrupa por la sensibilidad de la obra.
 -- ---------------------------------------------------------------------
 DROP FUNCTION IF EXISTS fn_obras_por_sector_de_restaurador(INTEGER);
 CREATE FUNCTION fn_obras_por_sector_de_restaurador(p_dni INTEGER)
 RETURNS TABLE (
-    dni            INTEGER,
-    nombre         VARCHAR,
-    apellido       VARCHAR,
     sector         VARCHAR,
     cantidad_obras BIGINT
 )
 LANGUAGE sql
 AS $$
-    SELECT e.dni,
-           e.nombre,
-           e.apellido,
-           o.sensibilidad,
+    SELECT o.sensibilidad,
            COUNT(DISTINCT r.id_obra)
-      FROM empleado e, restauracion r, obra o
-     WHERE r.dni_empleado = e.dni
-       AND o.id_obra      = r.id_obra
-       AND e.dni = p_dni
-     GROUP BY e.dni, e.nombre, e.apellido, o.sensibilidad
+      FROM restauracion r, obra o
+     WHERE o.id_obra      = r.id_obra
+       AND r.dni_empleado = p_dni
+     GROUP BY o.sensibilidad
      ORDER BY o.sensibilidad;
 $$;
 
@@ -84,8 +80,9 @@ $$;
 -- Entrada: ninguna.
 -- Salida:  empleados que restauraron por lo menos 5 obras en los
 --          últimos 6 meses, con la cantidad de obras.
--- Lógica:  devuelve la vista vw_restauradores_ultimos_6_meses ordenada
---          por cantidad de obras.
+-- Lógica:  lee la vista vw_restauradores_ultimos_6_meses, que tiene la
+--          cantidad de obras de cada empleado en los últimos 6 meses,
+--          y filtra los que tienen por lo menos 5.
 -- ---------------------------------------------------------------------
 DROP FUNCTION IF EXISTS fn_restauradores_ultimos_6_meses();
 CREATE FUNCTION fn_restauradores_ultimos_6_meses()
@@ -104,20 +101,22 @@ AS $$
            v.email,
            v.obras_restauradas
       FROM vw_restauradores_ultimos_6_meses v
+     WHERE v.obras_restauradas >= 5
      ORDER BY v.obras_restauradas DESC, v.apellido;
 $$;
 
 -- ---------------------------------------------------------------------
 -- D) fn_copias_de_autor
--- Entrada: p_nombre y p_apellido del autor.
+-- Entrada: p_id_autor, id del autor (nombre y apellido no son clave y
+--          podrían repetirse entre autores distintos).
 -- Salida:  una fila por cada copia de las obras del autor, con sus
 --          datos y la sala donde se encuentra. El tipo de sala indica
 --          si está exhibida ('muestra') o almacenada ('almacenamiento').
--- Lógica:  une COPIA, OBRA, AUTOR y SALA y filtra por nombre y apellido
---          del autor.
+-- Lógica:  une COPIA, OBRA y SALA y filtra por el id del autor de la
+--          obra.
 -- ---------------------------------------------------------------------
-DROP FUNCTION IF EXISTS fn_copias_de_autor(VARCHAR, VARCHAR);
-CREATE FUNCTION fn_copias_de_autor(p_nombre VARCHAR, p_apellido VARCHAR)
+DROP FUNCTION IF EXISTS fn_copias_de_autor(INTEGER);
+CREATE FUNCTION fn_copias_de_autor(p_id_autor INTEGER)
 RETURNS TABLE (
     id_copia       INTEGER,
     fecha_creacion DATE,
@@ -132,12 +131,10 @@ AS $$
            o.nombre,
            s.nombre,
            s.tipo
-      FROM copia c, obra o, autor a, sala s
+      FROM copia c, obra o, sala s
      WHERE o.id_obra  = c.id_obra
-       AND a.id_autor = o.id_autor
        AND s.id_sala  = c.id_sala
-       AND a.nombre   = p_nombre
-       AND a.apellido = p_apellido
+       AND o.id_autor = p_id_autor
      ORDER BY o.nombre, c.id_copia;
 $$;
 
@@ -171,8 +168,10 @@ $$;
 -- Entrada: ninguna.
 -- Salida:  datos de los empleados con más de 5 años de antigüedad que
 --          restauraron por lo menos 5 obras en el último año.
--- Lógica:  devuelve la vista vw_restauradores_antiguos_ultimo_anio
---          ordenada por cantidad de obras.
+-- Lógica:  lee la vista vw_restauradores_antiguos_ultimo_anio, que tiene
+--          la cantidad de obras del último año de cada empleado con más
+--          de 5 años de antigüedad, y filtra los que tienen por lo
+--          menos 5.
 -- ---------------------------------------------------------------------
 DROP FUNCTION IF EXISTS fn_restauradores_antiguos_ultimo_anio();
 CREATE FUNCTION fn_restauradores_antiguos_ultimo_anio()
@@ -197,5 +196,6 @@ AS $$
            v.fecha_ingreso,
            v.obras_restauradas
       FROM vw_restauradores_antiguos_ultimo_anio v
+     WHERE v.obras_restauradas >= 5
      ORDER BY v.obras_restauradas DESC, v.apellido;
 $$;
